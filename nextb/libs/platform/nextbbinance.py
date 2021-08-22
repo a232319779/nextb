@@ -53,7 +53,7 @@ class NextBBiance(object):
                 symbol_name = symbol.get('symbol', '')
                 if not symbol_name.endswith('DOWNUSDT') and \
                     not symbol_name.endswith('UPUSDT') and \
-                        symbol_name not in ('USDCUSDT', 'BUSDUSDT', 'PAXUSDT', 'TUSDUSDT', 'USDSBUSDT'):
+                        symbol_name not in ('USDCUSDT', 'BUSDUSDT', 'PAXUSDT', 'TUSDUSDT', 'USDSBUSDT', 'SUSDUSDT'):
                     data = self.client.get_klines(symbol=symbol_name, interval=interval)
 
         return data

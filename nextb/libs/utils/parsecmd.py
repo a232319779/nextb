@@ -23,9 +23,11 @@ def nextb_cmd_parse():
                                         formatter_class=argparse.RawDescriptionHelpFormatter
                                         )
     parser.add_argument('-c', '--config', help='set config.ini file',
-                        type=str, dest='config', action='store')
+                        type=str, dest='config', action='store', default='./nextb/configs/config.ini')
     parser.add_argument('-n', '--name', help='set robot name',
-                        type=str, dest='name', action='store')
+                        type=str, dest='name', action='store', default='LEEK_ROBOT_0')
+    parser.add_argument('-d', '--db', help='use postgresql',
+                        dest='db', action='store_true')
 
     args = parser.parse_args()
 
