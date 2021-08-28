@@ -6,7 +6,7 @@
 # @Software:   Visual Studio Code
 # @Desc    :   None
 
-# import pickle
+
 import datetime
 
 from nextb.libs.utils.parsecmd import nextb_cmd_parse
@@ -29,12 +29,9 @@ def main():
     api_secret = robot_config.get("api_secret")
     interval = robot_config.get("klines_interval")
     nbb = NextBBiance(
-        api_key=api_key, api_secret=api_secret, proxies=proxies
+        api_key=api_key, api_secret=api_secret, proxies=proxies, increasing=True
     )
-    datas = nbb.get_binance_klines_datas(interval=interval)
-    # file_name = '{0}.data'.format(datetime.datetime.now().strftime('%Y%m%d%H'))
-    # with open(file_name, "wb") as f:
-    #     pickle.dump(datas, f, 2)
+    datas = nbb.get_binance_klines_datas_inc(interval=interval, limit=2)
 
     choose_list = analysis(datas)
     if cmd_args.db:
@@ -42,6 +39,10 @@ def main():
         recommond_data = {'robot_name': 'LeekRobot0', 'symbols': '', 'time': datetime.datetime.now()}
         symbols = ','.join([cl.get('symbol','ddvv') for cl in choose_list])
         recommond_data['symbols'] = symbols
+        if symbols:
+            recommond_data['count'] = symbols.count(',') + 1
+        else:
+            recommond_data['count'] = 0
         db.add_data(recommond_data)
 
 if __name__ == "__main__":

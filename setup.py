@@ -14,14 +14,14 @@ depends = [
 
 setup(
     name="nextb",
-    version="1.0.0",
+    version="1.0.1",
     packages=find_packages(exclude=[]),
 
     zip_safe=False,
 
     entry_points={
         "console_scripts": [
-            "nextb-run = nextb.main:run",
+            "nextb-base-data = nextb.tools.show_base_data:run",
         ],
     },
 

@@ -9,7 +9,7 @@
 
 db_config = {
     "address": "",
-    "port": 5432,
+    "port": 0,
     "username": "",
     "password": "",
     "db_name": "nextb"

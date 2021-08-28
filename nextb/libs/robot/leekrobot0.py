@@ -72,7 +72,7 @@ class LeekRobot0(Robot):
         return [M1, M2, M3]
 
     def analysis(self, data):
-        r_data = {'symbol': data.get('symbol'), 'symbol_index': data.get('symbol_index', -1), 'r': list()}
+        r_data = {'symbol': data.get('symbol').replace('USDT',''), 'symbol_index': data.get('symbol_index', -1), 'r': list()}
         data_ = data.get('data', [])
         k_data = self.klines_analysis(data_)
         r_data['r'].extend(k_data)
