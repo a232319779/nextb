@@ -8,10 +8,12 @@
 
 import json
 from time import sleep
+from collections import Counter
 
 from datetime import datetime
 from nextb.libs.utils.parsecmd import nextb_cmd_parse
 from nextb.libs.utils.parseini import NextBParseINI
+from nextb.libs.utils.basedata import BaseData
 from nextb.libs.platform.nextbbinance import NextBBiance
 from nextb.libs.db.nextbDB import NextBDB
 
@@ -63,6 +65,40 @@ def get_trade(symbol, nbb, isBuyer=True):
     result = {'quoteQty': quoteQty, 'price': sum(price_list)/len(price_list), 'qty': qty, 'time': datetime.fromtimestamp(trades[0].get('time')/1000)}
     return result
 
+def count_symbol(new_datas):
+    symbols = list()
+    for nd in new_datas:
+        if nd.symbols:
+            symbols.extend(nd.symbols.split(','))
+    return len(list(set(symbols)))
+
+def choose_symbol_func(new_datas):
+    bd = BaseData()
+    symbols = list()
+    for nd in new_datas:
+        if nd.symbols:
+            symbols.extend(nd.symbols.split(','))
+    if symbols:
+        symbols_counter = dict(Counter(symbols))
+        symbols_counter = sorted(symbols_counter.items(), key=lambda item: item[1], reverse=True)
+        max_counter = max([a[1] for a in symbols_counter])
+        max_counter = max([max_counter, 3])
+        symbols = [a[0] for a in symbols_counter if a[1] >= max_counter]
+        choose_symbols = dict()
+        for symbol in symbols:
+            choose_symbols[symbol] = bd.get_symbol_qty(symbol, 5)
+        choose_symbols = sorted(choose_symbols.items(), key=lambda item: item[1], reverse=True)
+        symbols = [a[0] for a in choose_symbols]
+        # 排除BTC和ETH，太贵，买不起
+        for s in symbols:
+            symbol = s+"USDT"
+            if symbol in ['BTCUSDT', "ETHUSDT"]:
+                continue
+            return symbol
+
+    return ''
+        
+
 def nextb_buy(robot_name, now_recommond_id, ratio, db, nbb):
     current_recommond = db.search_data(robot_name)
     recommond_id = current_recommond.get('id', 0)
@@ -72,22 +108,15 @@ def nextb_buy(robot_name, now_recommond_id, ratio, db, nbb):
         print("交易已经完成，退出")
     else:
         # 等待交易，市价买入
-        symbols = current_recommond.get('symbols', '')
-        if symbols:
-            symbol_list = symbols.split(',')
-            choose_symbol = ''
-            # 排除BTC和ETH，太贵，买不起
-            for s in symbol_list:
-                symbol = s+"USDT"
-                if symbol in ['BTCUSDT', "ETHUSDT"]:
-                    continue
-                choose_symbol = symbol
-                break
-            if choose_symbol:
+        datas = db.search_datas(robot_name,limit=5)
+        count = count_symbol(datas)
+        if count > 60:
+            symbol = choose_symbol_func(datas)
+            if symbol:
                 account = nbb.get_asset_balance('USDT')
                 price_data = nbb.get_symbol_ticker(symbol)
                 price = float(price_data.get('price', 0.0))
-                symbol_info = nbb.get_symbol_info(choose_symbol)
+                symbol_info = nbb.get_symbol_info(symbol)
                 calc_result = calc(account,symbol_info, price, ratio)
                 buy_quantity = calc_result.get('buy_quantity', 0)
                 buy_result = nbb.order_market_buy(symbol, buy_quantity)
@@ -106,7 +135,7 @@ def nextb_buy(robot_name, now_recommond_id, ratio, db, nbb):
                     i += 1
                 if buy_result.get('orderId', 0):
                     # 买单3秒以后，挂单卖出
-                    # sleep(3)
+                    sleep(3)
                     result = get_trade(symbol, nbb, isBuyer=True)
                     buy_price = result.get('price', 0)
                     sell_price = round(buy_price * ratio, calc_result.get('tickSize_index'))
@@ -124,8 +153,7 @@ def nextb_buy(robot_name, now_recommond_id, ratio, db, nbb):
             else:
                 print('没有合适的币种买入，退出')
         else:
-            print('没有推荐的币种，退出')
-
+            print('卖方市场，暂时不买入')
 
 def main():
     cmd_args = nextb_cmd_parse()
@@ -141,6 +169,7 @@ def main():
     api_secret = robot_config.get("api_secret")
     ratio = float(robot_config.get("ratio"))
     sell_ratio = float(robot_config.get("sell_ratio"))
+    maker_ratio = float(robot_config.get("maker_ratio"))
     hour = float(robot_config.get("hour"))
     nbb = NextBBiance(
         api_key=api_key, api_secret=api_secret, proxies=proxies, increasing=True
@@ -158,6 +187,7 @@ def main():
         order_id = cur_trade.get('order_id', 0)
         order_status = nbb.get_order(symbol=symbol, orderId=order_id)
         if order_status.get('status', '') == 'FILLED':
+            # 交易完成
             result = get_trade(symbol, nbb, isBuyer=False)
             buy_quote = cur_trade.get('buy_quote', 0)
             sell_quote = result.get('quoteQty', 0.0)
@@ -181,8 +211,12 @@ def main():
             price_data = nbb.get_symbol_ticker(symbol)
             price = float(price_data.get('price', 0.0))
             now_ratio = (price - buy_price) / buy_price
-            print('当前币种: %s, 当前涨跌幅: %.2f%%, 持有时间: %.2f小时' % (symbol, now_ratio * 100, hold_hours))
-            if (now_ratio < sell_ratio and hold_hours > 3.5) or hold_hours > hour:
+            datas = db.search_datas(robot_name,limit=5)
+            count = count_symbol(datas)
+            print('当前行情: %d, 当前币种: %s, 当前涨跌幅: %.2f%%, 持有时间: %.2f小时' % (count, symbol, now_ratio * 100, hold_hours))
+            if (now_ratio < sell_ratio and hold_hours > 4.0) or hold_hours > hour or count < 3 or now_ratio > maker_ratio:
+                if count < 5:
+                    print('买方市场，考虑卖出')
                 # 取消订单
                 cancel_order = nbb.cancel_order(symbol, order_id)
                 if cancel_order.get('orderId', 0):

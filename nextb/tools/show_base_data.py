@@ -8,19 +8,16 @@
 
 
 import sys
-import pickle
+from nextb.libs.utils.basedata import BaseData
 
 def run():
+    file_name = '/home/pi/NextB/base.data'
+    bd = BaseData(file_name)
     symbol = sys.argv[1]
-    file_name = ''
-    with open(file_name, 'rb') as f:
-        base_data = pickle.load(f)
-    datas = base_data.get('data')
-    for data in datas:
-        if data.get('symbol').lower().startswith(symbol):
-            print(data.get('data')[-1])
-            exit(0)
-
+    index = int(sys.argv[2])
+    datas = bd.get_symbol_data(symbol)
+    print(datas.get('data')[-index:])
+            
 
 if __name__ == "__main__":
     run()

@@ -31,16 +31,17 @@ class NextBBiance(object):
             self.symbols = exchange_info.get('symbols', [])
 
     def load_datas(self):
-        file_name = ''
+        file_name = '/home/pi/NextB/base.data'
         with open(file_name, 'rb') as f:
             self.datas = pickle.load(f)
 
-    def dump_datas(self):
-        file_name = ''
+    def dump_datas(self, force_update=False):
+        file_name = '/home/pi/NextB/base.data'
         update_time = self.datas['update_time']
         now_time = datetime.datetime.now().strftime('%Y-%m-%d %H:00:00')
-        if update_time[:13] != now_time[:13]:
-            self.datas['update_time'] = now_time
+        if update_time[:13] != now_time[:13] or force_update:
+            if not force_update:
+                self.datas['update_time'] = now_time
             with open(file_name, "wb") as f:
                 pickle.dump(self.datas, f, 2)
 
@@ -93,7 +94,7 @@ class NextBBiance(object):
     
         data = self.client.get_klines(symbol=symbol, interval=interval, limit=limit)
 
-        return data[0]
+        return data
 
     def get_binance_klines_datas(self, interval=Client.KLINE_INTERVAL_1HOUR, limit=500):
         """
@@ -127,11 +128,30 @@ class NextBBiance(object):
             symbol = sn.get('symbol')
             data = self.get_klines_inc(symbol, interval=interval, limit=limit)
             if data:
-                datas[i]['data'].append(data)
+                datas[i]['data'].append(data[0])
             i += 1
 
         self.datas['data'] = datas
         self.dump_datas()
+        return datas
+
+    def get_binance_klines_datas_update(self, interval=Client.KLINE_INTERVAL_1HOUR, limit=3):
+        """
+        获取所有币种的K线图数据
+        """
+        datas = self.datas.get('data')
+        i = 0
+        for sn in self.symbols:
+            symbol = sn.get('symbol')
+            data = self.get_klines_inc(symbol, interval=interval, limit=limit)
+            if data:
+                del sn.get('data')[-1]
+                datas[i]['data'].append(data[0])
+                datas[i]['data'].append(data[1])
+            i += 1
+
+        self.datas['data'] = datas
+        self.dump_datas(force_update=True)
         return datas
 
     def get_asset_balance(self, symbol='USDT'):

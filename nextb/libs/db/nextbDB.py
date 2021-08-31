@@ -98,8 +98,8 @@ class NextBDB:
         else:
             return []
     
-    def search_datas(self, robot_name):
-        datas = self.session_maker.query(NextBRecommend).filter(NextBRecommend.robot_name == robot_name).order_by(NextBRecommend.id.desc()).limit(28)
+    def search_datas(self, robot_name, limit=28):
+        datas = self.session_maker.query(NextBRecommend).filter(NextBRecommend.robot_name == robot_name).order_by(NextBRecommend.id.desc()).limit(limit)
         if datas.count():
             return datas
         else:

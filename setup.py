@@ -14,7 +14,7 @@ depends = [
 
 setup(
     name="nextb",
-    version="1.0.1",
+    version="1.0.2",
     packages=find_packages(exclude=[]),
 
     zip_safe=False,
@@ -22,6 +22,9 @@ setup(
     entry_points={
         "console_scripts": [
             "nextb-base-data = nextb.tools.show_base_data:run",
+            "nextb-base-check = nextb.tools.check_datas:run",
+            "nextb-base-btc = nextb.tools.check_btc:run",
+            "nextb-base-inc-recom = nextb.tools.recommend_local:run",
         ],
     },
 

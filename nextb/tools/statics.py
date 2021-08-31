@@ -15,7 +15,7 @@ def main():
     db = NextBDB()
     datas = db.search_datas('LeekRobot0')
 
-    file_name = ''
+    file_name = '/home/pi/NextB/base.data'
     with open(file_name, 'rb') as f:
         symbol_datas = pickle.load(f)
     
