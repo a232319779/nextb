@@ -104,7 +104,7 @@ class NextBBiance(object):
         i = 0
         for sn in self.symbols:
             symbol = sn.get('symbol')
-            data = self.get_klines(symbol, interval=interval, limit=limit)
+            data = self.get_klines(sn, interval=interval, limit=limit)
             if data:
                 tmp = {
                     "symbol": symbol,

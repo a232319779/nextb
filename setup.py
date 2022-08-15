@@ -10,11 +10,12 @@
 from setuptools import setup, find_packages
 
 depends = [
+    "python-binance==1.0.15"
 ]
 
 setup(
     name="nextb",
-    version="1.0.2",
+    version="1.0.3",
     packages=find_packages(exclude=[]),
 
     zip_safe=False,
